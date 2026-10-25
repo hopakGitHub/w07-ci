@@ -9,7 +9,8 @@
     "typecheck": "tsc --noEmit",
     "test:unit": "vitest run tests/unit",
     "test:integration": "vitest run tests/integration",
-    "build": "wrangler deploy --dry-run --outdir dist"
+    "build": "wrangler deploy --dry-run --outdir dist",
+    "test:smoke": "node scripts/smoke.mjs"
   },
   "repository": {
     "type": "git",
@@ -37,6 +38,7 @@
   },
   "allowScripts": {
     "esbuild@0.28.2": true,
-    "workerd@1.20261019.1": true
+    "workerd@1.20261019.1": true,
+    "fsevents": false
   }
 }
