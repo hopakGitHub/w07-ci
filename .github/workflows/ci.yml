@@ -1,4 +1,4 @@
-name: CI
+name: CI and Deploy
 
 on:
   push:
@@ -15,6 +15,11 @@ permissions:
   contents: read
 
 jobs:
+
+  # ----------------------------------
+  # Job 1: Continuous Integration
+  # ----------------------------------
+
   ci:
     name: ci
 
@@ -50,3 +55,98 @@ jobs:
 
       - name: Build
         run: npm run build
+
+
+  # ----------------------------------
+  # Job 2: Continuous Deployment
+  # ----------------------------------
+
+  deploy:
+    name: deploy
+
+    needs: ci
+
+    if: >
+      github.event_name == 'push' &&
+      github.ref == 'refs/heads/main'
+
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    concurrency:
+      group: week9-production
+      cancel-in-progress: false
+
+    permissions:
+      contents: write
+
+    steps:
+
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Deploy Cloudflare Worker
+        id: publish
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: deploy
+
+      - name: Verify production deployment
+        env:
+          DEPLOYMENT_URL: ${{ steps.publish.outputs.deployment-url }}
+          PRODUCTION_URL: ${{ vars.PRODUCTION_URL }}
+        run: npm run test:smoke
+
+      - name: Create version tag and GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DEPLOYMENT_URL: ${{ steps.publish.outputs.deployment-url }}
+          PRODUCTION_URL: ${{ vars.PRODUCTION_URL }}
+        shell: bash
+        run: |
+          TAG="w09-r${GITHUB_RUN_NUMBER}"
+          RELEASE_URL="${DEPLOYMENT_URL:-$PRODUCTION_URL}"
+
+          cat > release-notes.md <<EOF
+          # Global Event Ticket Reservation System
+
+          ## Release information
+
+          - Version tag: $TAG
+          - Git commit: $GITHUB_SHA
+          - Branch: main
+          - Deployment URL: $RELEASE_URL
+
+          ## Automated verification
+
+          - ESLint: passed
+          - TypeScript type checking: passed
+          - Unit tests: passed
+          - Integration tests: passed
+          - Wrangler build: passed
+          - Cloudflare deployment: completed
+          - Production smoke tests: passed
+
+          ## Rollback procedure
+
+          Inspect Cloudflare Worker deployments.
+          Roll back to the previous stable Worker version.
+          Verify /health and /events again.
+          Correct the source code in GitHub.
+          EOF
+
+          gh release create "$TAG" \
+            --target "$GITHUB_SHA" \
+            --title "$TAG - Global Ticket Reservation" \
+            --notes-file release-notes.md

@@ -1,20 +1,21 @@
 {
-  "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "w07-ci",
-  "main": "src/index.ts",
-  "compatibility_date": "2026-10-01",
-  "d1_databases": [
-    {
-      "binding": "DB",
-      "database_name": "ticket-ci-lab",
-      "database_id": "00000000-0000-0000-0000-000000000000",
-      "migrations_dir": "migrations"
-    }
-  ],
-  "kv_namespaces": [
-    {
-      "binding": "META",
-      "id": "00000000000000000000000000000000"
-    }
-  ]
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "w07-ci",
+	"main": "src/index.ts",
+	"compatibility_date": "2026-10-01",
+	"workers_dev": true,
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "w07-ci-lab",
+			"database_id": "0c0d52e9-4b76-4918-9ef9-de80954124c4",
+			"migrations_dir": "migrations"
+		}
+	],
+	"kv_namespaces": [
+		{
+			"binding": "META",
+			"id": "130b6402d06c466181bf879a1ed85721"
+		}
+	]
 }
